@@ -55,7 +55,7 @@ summary(activity)
   
 ## What is mean total number of steps taken per day?
 
-Using the ddply function of the plyr library, the total number of steps per day are calculated and displayed as a histogram.  The mean and median values are also calculated and shown on the plot, and the mean is marked with a vertical line for reference.
+Using the ddply function of the plyr library, the total number of steps per day are calculated and displayed as a histogram.  The mean and median values are also calculated and shown on the plot, and the mean is marked with a vertical line for reference.  As shown on the histogram, the mean is 10766.19, and the median is 10765.
 
 
 ```r
@@ -81,7 +81,7 @@ legend("topright", c(paste("mean =", format(mean.steps.per.day, 1)),
   
 ## What is the average daily activity pattern?
 
-For this question, we want to look at each interval instead of each day, so again using the aggregate function of the plyr library, we can average across all of the days.  To avoid the discontinuity between the intervals ending in 55 and the next interval ending in 00, the hours column calculated above is used to represent the interval on the x-axis.
+For this question, we want to look at each interval instead of each day, so again using the aggregate function of the plyr library, we can average across all of the days.  To avoid the discontinuity between the intervals ending in 55 and the next interval ending in 00, the hours column calculated above is used to represent the interval on the x-axis, but the labels are redrawn to correspond to the time interval.  The time interval with the maximum number of step is 0835 (8:35 AM) with a mean value of 206.2.
 
 
 ```r
@@ -97,11 +97,15 @@ interval.of.max = 100 * trunc(time.of.max) +
         60 * (time.of.max - trunc(time.of.max))
 value.of.max = mean.by.hours$meansteps[index]
 
+i <- seq(0,24,3)
+xlab <- sprintf("%04d", i*100)
 plot(mean.by.hours, type = 'n',
         main = "Plot of average number of steps by time of day",
-        xlab = "Time of day (hours)", ylab = "Mean number of Steps",
-        xlim = c(0,24), xaxp = c(0, 24, 8))
+        xlab = "Time of day (interval)", ylab = "Mean number of Steps",
+        xlim = c(0,24), axes = FALSE)
 axis(1, xaxp = c(0, 24, 24), labels = FALSE)
+axis(1, xaxp = c(0, 24, 8), at = i, labels = xlab)
+axis(2)
 abline(v = time.of.max, col = "darkred", lwd = 2)
 lines(mean.by.hours, col = "steelblue", lwd = 2)
 legend("topright", c(sprintf("time interval = %04d", interval.of.max),
@@ -210,7 +214,7 @@ summary(activity.imputed)
 ```
   
   
-Next, the data are summarized by the mean of the values split by hours (time interval) and weekday, and those data are plotted separately for weekday and weekend.  Some differences that can be observed are that the activity tends to peak higher on weekdays(230) vs weekends (166), but the total activity appears to be a bit more.  Also above a certain threshold, say 50 steps per 5-minute period, activity appears to start and end later on weekends.
+Next, the data are summarized by the mean of the values split by hours (time interval) and weekday, and those data are plotted separately for weekday and weekend.  Some differences that can be observed are that the activity tends to peak higher on weekdays(230) vs weekends (167), but the total activity appears to be a bit more.  Also above a certain threshold, say 50 steps per 5-minute period, activity appears to start and end later on weekends.
 
 
 ```r
@@ -236,13 +240,16 @@ max(mean.by.hours.split[mean.by.hours.split$weekday == "weekend","meansteps"])
 ```
 
 ```r
-xlabs <- seq(0,24)
-xlabs[xlabs %% 3 != 0] <- ""
+xlabs <- rep("", 25)
+i <- seq(0,24,3)
+xlabs[i+1] <- sprintf("%04d", i*100)
+
+
 g <- ggplot(mean.by.hours.split, aes(hours, meansteps)) +
         geom_line(color = "steelblue") +
         facet_wrap(~weekday, nrow = 2) +
         labs(title = "Average daily steps by time split by weekday / weekend",
-        x = "Time of day (hours)", y = "Mean number of steps") +
+        x = "Time of day (interval)", y = "Mean number of steps") +
         scale_x_continuous(breaks = seq(0,24), labels = xlabs)
 g
 ```
