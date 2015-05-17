@@ -1,17 +1,13 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-author: "George F. Dorsey, Jr."
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1
+George F. Dorsey, Jr.  
 ***
   
 ## Loading and preprocessing the data
 
 The unzipped [activity.csv](activity.csv) file should be located in the working directory.  The file is read into the $activity$ variable and tidied a bit by first converting the date column to a Date type.
 
-```{r echo=TRUE}
+
+```r
 activity <- read.csv("activity.csv")
 activity$date <- as.Date(activity$date, format="%Y-%m-%d")
 ```
@@ -19,7 +15,8 @@ activity$date <- as.Date(activity$date, format="%Y-%m-%d")
   
 Next, a function is defined to convert the interval strings into real-valued continuous hours.  This will be useful when plotting the intervals on the x-axis to avoid the discontinuity between intervals xx55 and yy00 when represented as numbers.
 
-```{r echo=TRUE, message=FALSE}
+
+```r
 convertInterval <- function(x) {
     hour <- floor(x/100)
     minute <- x %% 100
@@ -29,8 +26,29 @@ convertInterval <- function(x) {
 activity$hours <- convertInterval(activity$interval)
 
 str(activity)
+```
 
+```
+## 'data.frame':	17568 obs. of  4 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Date, format: "2012-10-01" "2012-10-01" ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+##  $ hours   : num  0 0.0833 0.1667 0.25 0.3333 ...
+```
+
+```r
 summary(activity)
+```
+
+```
+##      steps             date               interval          hours       
+##  Min.   :  0.00   Min.   :2012-10-01   Min.   :   0.0   Min.   : 0.000  
+##  1st Qu.:  0.00   1st Qu.:2012-10-16   1st Qu.: 588.8   1st Qu.: 5.979  
+##  Median :  0.00   Median :2012-10-31   Median :1177.5   Median :11.958  
+##  Mean   : 37.38   Mean   :2012-10-31   Mean   :1177.5   Mean   :11.958  
+##  3rd Qu.: 12.00   3rd Qu.:2012-11-15   3rd Qu.:1766.2   3rd Qu.:17.938  
+##  Max.   :806.00   Max.   :2012-11-30   Max.   :2355.0   Max.   :23.917  
+##  NA's   :2304
 ```
   
 ***
@@ -39,7 +57,8 @@ summary(activity)
 
 Using the ddply function of the plyr library, the total number of steps per day are calculated and displayed as a histogram.  The mean and median values are also calculated and shown on the plot, and the mean is marked with a vertical line for reference.
 
-```{r echo=TRUE, message=FALSE}
+
+```r
 library(plyr)
 
 sum.by.date <- ddply(activity, .(date), summarize, sumsteps=sum(steps))
@@ -55,6 +74,8 @@ legend("topright", c(paste("mean =", format(mean.steps.per.day, 1)),
         paste("median =", median.steps.per.day)), col = c("darkred", "white"),
         lwd = 2, bty="n", bg="white")
 ```
+
+![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
   
 ***
   
@@ -62,7 +83,8 @@ legend("topright", c(paste("mean =", format(mean.steps.per.day, 1)),
 
 For this question, we want to look at each interval instead of each day, so again using the aggregate function of the plyr library, we can average across all of the days.  To avoid the discontinuity between the intervals ending in 55 and the next interval ending in 00, the hours column calculated above is used to represent the interval on the x-axis.
 
-```{r echo=TRUE, message=FALSE}
+
+```r
 #library(plyr)
 
 mean.by.hours <- ddply(activity, .(hours), summarize,
@@ -86,7 +108,9 @@ legend("topright", c(sprintf("time interval = %04d", interval.of.max),
         sprintf("value = %.1f", value.of.max, 1)),
         title = "Maximum number of steps",
         col = c("darkred", "white"), lwd = 2, bty="n", bg="white")
-``` 
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-4-1.png) 
   
 ***
   
@@ -94,29 +118,44 @@ legend("topright", c(sprintf("time interval = %04d", interval.of.max),
 
 Using either the summary shown in the first panel or the sum below, we see that there are 2304 NA values.
 
-```{r echo=TRUE, message=FALSE}
+
+```r
 invalidRows <- is.na(activity$steps)
 sum(invalidRows)
+```
+
+```
+## [1] 2304
 ```
   
   
 The method I've chosen to impute the missing values is to use the mean for the same time period for the other days.
 
-```{r echo=TRUE, message=FALSE}
 
+```r
 activity.imputed <- activity
 indices = which(invalidRows)
 hours = activity$hours[invalidRows]
 means = mean.by.hours$meansteps[match(hours, mean.by.hours$hours)]
 activity.imputed$steps[indices] = means
 summary(activity.imputed)
+```
 
-``` 
+```
+##      steps             date               interval          hours       
+##  Min.   :  0.00   Min.   :2012-10-01   Min.   :   0.0   Min.   : 0.000  
+##  1st Qu.:  0.00   1st Qu.:2012-10-16   1st Qu.: 588.8   1st Qu.: 5.979  
+##  Median :  0.00   Median :2012-10-31   Median :1177.5   Median :11.958  
+##  Mean   : 37.38   Mean   :2012-10-31   Mean   :1177.5   Mean   :11.958  
+##  3rd Qu.: 27.00   3rd Qu.:2012-11-15   3rd Qu.:1766.2   3rd Qu.:17.938  
+##  Max.   :806.00   Max.   :2012-11-30   Max.   :2355.0   Max.   :23.917
+```
   
   
 The data are then plotted as before, with the earlier data shown in red and the new data with imputed values shown in blue.  Not surprisingly since entire days appear to be missing from the original data set, this approach appears to bias the imputed values toward the mean, so that the mean and median don't change for the imputed data set relative to the original data set, and there is a large increase in the frequency of the bucket containing the mean number of steps.
 
-```{r echo=TRUE, message=FALSE}
+
+```r
 #library(plyr)
 
 sum.by.date.imputed <- ddply(activity.imputed, .(date), summarize,
@@ -136,6 +175,8 @@ legend("topright", c(paste("mean =", format(mean.steps.per.day, 1)),
         lwd = 2, bty="n", bg="white")
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-7-1.png) 
+
   
 ***
   
@@ -143,17 +184,36 @@ legend("topright", c(paste("mean =", format(mean.steps.per.day, 1)),
 
 First, the day names are determined using the weekdays function.  Then a factor is created to label a  day as weekend or weekday (work day).
 
-```{r echo=TRUE, message=FALSE}
+
+```r
 activity.imputed$day = weekdays(activity.imputed$date)
 weekend = activity.imputed$day == "Saturday" | activity.imputed$day == "Sunday"
 activity.imputed$weekday = factor(ifelse(weekend, "weekend", "weekday"))
 summary(activity.imputed)
-``` 
+```
+
+```
+##      steps             date               interval          hours       
+##  Min.   :  0.00   Min.   :2012-10-01   Min.   :   0.0   Min.   : 0.000  
+##  1st Qu.:  0.00   1st Qu.:2012-10-16   1st Qu.: 588.8   1st Qu.: 5.979  
+##  Median :  0.00   Median :2012-10-31   Median :1177.5   Median :11.958  
+##  Mean   : 37.38   Mean   :2012-10-31   Mean   :1177.5   Mean   :11.958  
+##  3rd Qu.: 27.00   3rd Qu.:2012-11-15   3rd Qu.:1766.2   3rd Qu.:17.938  
+##  Max.   :806.00   Max.   :2012-11-30   Max.   :2355.0   Max.   :23.917  
+##      day               weekday     
+##  Length:17568       weekday:12960  
+##  Class :character   weekend: 4608  
+##  Mode  :character                  
+##                                    
+##                                    
+## 
+```
   
   
 Next, the data are summarized by the mean of the values split by hours (time interval) and weekday, and those data are plotted separately for weekday and weekend.  Some differences that can be observed are that the activity tends to peak higher on weekdays(230) vs weekends (166), but the total activity appears to be a bit more.  Also above a certain threshold, say 50 steps per 5-minute period, activity appears to start and end later on weekends.
 
-```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+```r
 # library(plyr)
 library(ggplot2)
 
@@ -161,8 +221,21 @@ mean.by.hours.split <- ddply(activity.imputed, .(hours,weekday), summarize,
         meansteps = mean(steps, na.rm = TRUE))
 
 max(mean.by.hours.split[mean.by.hours.split$weekday == "weekday","meansteps"])
-max(mean.by.hours.split[mean.by.hours.split$weekday == "weekend","meansteps"])
+```
 
+```
+## [1] 230.3782
+```
+
+```r
+max(mean.by.hours.split[mean.by.hours.split$weekday == "weekend","meansteps"])
+```
+
+```
+## [1] 166.6392
+```
+
+```r
 xlabs <- seq(0,24)
 xlabs[xlabs %% 3 != 0] <- ""
 g <- ggplot(mean.by.hours.split, aes(hours, meansteps)) +
@@ -172,6 +245,8 @@ g <- ggplot(mean.by.hours.split, aes(hours, meansteps)) +
         x = "Time of day (hours)", y = "Mean number of steps") +
         scale_x_continuous(breaks = seq(0,24), labels = xlabs)
 g
-``` 
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
   
   
